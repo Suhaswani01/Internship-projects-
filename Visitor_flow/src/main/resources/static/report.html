@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VMS — Reports</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { display: flex; background: #f0f4f8; color: #1e293b; }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: 240px; min-width: 240px; height: 100vh;
+      background: #143E6B; display: flex; flex-direction: column; padding: 20px 16px;
+    }
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; color: white; }
+    .logo-cloud { background: rgba(255,255,255,0.2); padding: 6px; border-radius: 8px; }
+    .nav { margin-top: 50px; flex-grow: 1; display: flex; flex-direction: column; gap: 6px; }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px; padding: 12px 14px;
+      border-radius: 14px; color: #1b0c0c; text-decoration: none;
+      font-size: 14px; font-weight: 500;
+      background: white; border: 1.5px solid #bacacd; transition: 0.2s;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.15); color: white; border-color: transparent; }
+    .nav-item.active { background: rgba(255,255,255,0.15); color: white; border-color: transparent; }
+    .sidebar-footer { display: flex; align-items: center; gap: 10px; padding: 8px 4px; }
+    .user-avatar {
+      background: white; color: #143E6B; font-weight: 700; font-size: 12px;
+      width: 34px; height: 34px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .user-name { font-size: 14px; color: white; font-weight: 600; }
+    .user-role { font-size: 11px; color: rgba(255,255,255,0.6); }
+
+    /* ── MAIN ── */
+    .main { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    .topbar {
+      height: 70px; min-height: 70px; background: #143E6B;
+      display: flex; justify-content: space-between; align-items: center; padding: 0 24px;
+      flex-shrink: 0;
+    }
+    .topbar-title { color: white; font-size: 18px; font-weight: 700; }
+    .topbar-right { display: flex; gap: 10px; }
+    .icon-btn {
+      background: rgba(255,255,255,0.15); border: none; border-radius: 50%;
+      width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;
+      color: white; cursor: pointer; position: relative;
+    }
+    .badge {
+      position: absolute; top: 4px; right: 4px; background: #ef4444;
+      color: white; border-radius: 50%; width: 15px; height: 15px;
+      font-size: 9px; display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ── CONTENT ── */
+    .content { flex: 1; overflow-y: auto; padding: 24px; }
+
+    /* ── STAT STRIP ── */
+    .stat-strip { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 20px; }
+    .stat-card {
+      background: white; border-radius: 14px; padding: 18px 20px;
+      display: flex; flex-direction: column; gap: 4px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+      border-top: 4px solid transparent;
+    }
+    .stat-card.total   { border-color: #143E6B; }
+    .stat-card.pending { border-color: #eab308; }
+    .stat-card.approved{ border-color: #22c55e; }
+    .stat-card.rejected{ border-color: #ef4444; }
+    .stat-card.checkin { border-color: #3b82f6; }
+
+    .stat-label { font-size: 12px; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-value { font-size: 26px; font-weight: 800; color: #1e293b; }
+    .stat-sub   { font-size: 12px; color: #64748b; }
+
+    /* ── CHARTS GRID ── */
+    .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+
+    .chart-card {
+      background: white; border-radius: 16px; padding: 22px;
+      box-shadow: 0 1px 8px rgba(0,0,0,0.07);
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .chart-card.dark { background: #0f172a; }
+    .chart-card.full { grid-column: 1 / -1; }
+
+    .chart-header { display: flex; justify-content: space-between; align-items: flex-start; }
+    .chart-title { font-size: 13px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; }
+    .chart-card.dark .chart-title { color: #94a3b8; }
+    .chart-value { font-size: 28px; font-weight: 800; color: #1e293b; line-height: 1; }
+    .chart-card.dark .chart-value { color: white; }
+
+    .chart-wrap { position: relative; }
+    .chart-wrap canvas { max-height: 200px; }
+
+    /* Donut */
+    .donut-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
+    .donut-center { position: absolute; text-align: center; pointer-events: none; }
+    .donut-center .dc-val { font-size: 22px; font-weight: 800; color: #1e293b; }
+    .donut-center .dc-lbl { font-size: 11px; color: #94a3b8; font-weight: 500; }
+
+    /* Legend */
+    .legend { display: flex; flex-wrap: wrap; gap: 10px; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748b; font-weight: 500; }
+    .legend-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+    /* Loading */
+    .loading { text-align: center; padding: 60px; color: #94a3b8; font-size: 14px; }
+    .spinner {
+      width: 36px; height: 36px; border: 3px solid #e2e8f0;
+      border-top-color: #143E6B; border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Section heading */
+    .section-heading {
+      font-size: 15px; font-weight: 700; color: #1e293b;
+      margin: 24px 0 12px; display: flex; align-items: center; gap: 8px;
+    }
+    .section-heading::after {
+      content: ''; flex: 1; height: 1px; background: #e2e8f0;
+    }
+    .logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.08);
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.logout-btn:hover {
+  background: #ef4444;
+  border-color: #ef4444;
+}
+  </style>
+</head>
+
+<body>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-cloud">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2">
+          <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
+        </svg>
+      </div>
+      <span>VMS</span>
+    </div>
+    <nav class="nav">
+      <a href="overview.html" class="nav-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+        </svg>
+        Overview
+      </a>
+      <a href="visitorlist.html" class="nav-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        Visitors List
+      </a>
+      <a href="report.html" class="nav-item active">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
+          <line x1="6" y1="20" x2="6" y2="14"/>
+        </svg>
+        Reports
+      </a>
+    </nav>
+    <!-- Sidebar footer ke NEECHE add karo -->
+<div class="sidebar-footer" id="profileBtn">
+  <div class="user-avatar" id="userAvatar">--</div>
+  <div class="user-info">
+    <span class="user-name" id="userName">Loading...</span>
+    <span class="user-role" id="userRole">--</span>
+  </div>
+</div>
+
+<!-- ✅ SIRF YEH ADD KARO -->
+<button class="logout-btn" onclick="logout()">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+    <polyline points="16 17 21 12 16 7"/>
+    <line x1="21" y1="12" x2="9" y2="12"/>
+  </svg>
+  Logout
+</button>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <header class="topbar">
+      <span class="topbar-title">Reports & Analytics</span>
+      <div class="topbar-right">
+        <button class="icon-btn">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
+          </svg>
+        </button>
+        <button class="icon-btn">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+          <span class="badge">3</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="content" id="content">
+      <div class="loading">
+        <div class="spinner"></div>
+        Loading visitor data…
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const DEPT_COLORS   = ['#3b82f6','#f97316','#22c55e','#a855f7','#ef4444','#eab308','#06b6d4','#ec4899'];
+    const GENDER_COLORS = { Male:'#3b82f6', Female:'#ec4899', Other:'#a855f7', 'Prefer not to say':'#94a3b8' };
+    const STATUS_COLORS = {
+      PENDING:     '#eab308',
+      APPROVED:    '#22c55e',
+      REJECTED:    '#ef4444',
+      CHECKED_IN:  '#3b82f6',
+      CHECKED_OUT: '#94a3b8'
+    };
+
+    fetch('http://localhost:8080/visitors')
+      .then(r => r.json())
+      .then(data => buildDashboard(data))
+      .catch(() => {
+        document.getElementById('content').innerHTML =
+          '<div class="loading" style="color:#ef4444">⚠️ Could not reach server at localhost:8080.<br>Make sure Spring Boot is running.</div>';
+      });
+
+    function buildDashboard(data) {
+      const total = data.length;
+
+      // ── Status counts ──
+      const statusMap = { PENDING: 0, APPROVED: 0, REJECTED: 0, CHECKED_IN: 0, CHECKED_OUT: 0 };
+      data.forEach(v => {
+        const s = (v.status || 'PENDING').toUpperCase();
+        statusMap[s] = (statusMap[s] || 0) + 1;
+      });
+
+      // ── Department counts ──
+      const deptMap = {};
+      data.forEach(v => { deptMap[v.department] = (deptMap[v.department] || 0) + 1; });
+      const deptLabels = Object.keys(deptMap);
+      const deptVals   = Object.values(deptMap);
+
+      // ── Gender counts ──
+      const genderMap = {};
+      data.forEach(v => { genderMap[v.gender] = (genderMap[v.gender] || 0) + 1; });
+
+      // ── Purpose counts ──
+      const purposeMap = {};
+      data.forEach(v => { purposeMap[v.purpose] = (purposeMap[v.purpose] || 0) + 1; });
+      const purposeLabels = Object.keys(purposeMap);
+      const purposeVals   = Object.values(purposeMap);
+
+      // ── Age groups ──
+      const ageGroups = { '0-18': 0, '19-30': 0, '31-45': 0, '46-60': 0, '60+': 0 };
+      data.forEach(v => {
+        const a = parseInt(v.age);
+        if (a <= 18)      ageGroups['0-18']++;
+        else if (a <= 30) ageGroups['19-30']++;
+        else if (a <= 45) ageGroups['31-45']++;
+        else if (a <= 60) ageGroups['46-60']++;
+        else              ageGroups['60+']++;
+      });
+
+      const topDept    = deptLabels[deptVals.indexOf(Math.max(...deptVals))] || '—';
+      const topPurpose = purposeLabels[purposeVals.indexOf(Math.max(...purposeVals))] || '—';
+      const maleCount  = genderMap['Male']   || 0;
+      const femaleCount= genderMap['Female'] || 0;
+
+      // ── Render HTML ──
+      document.getElementById('content').innerHTML = `
+
+        <!-- ── STATUS STAT STRIP ── -->
+        <div class="stat-strip">
+          <div class="stat-card total">
+            <div class="stat-label">Total Visitors</div>
+            <div class="stat-value">${total}</div>
+            <div class="stat-sub">All registered</div>
+          </div>
+          <div class="stat-card pending">
+            <div class="stat-label">Pending</div>
+            <div class="stat-value" style="color:#eab308">${statusMap.PENDING}</div>
+            <div class="stat-sub">Awaiting approval</div>
+          </div>
+          <div class="stat-card approved">
+            <div class="stat-label">Approved</div>
+            <div class="stat-value" style="color:#22c55e">${statusMap.APPROVED}</div>
+            <div class="stat-sub">Host approved</div>
+          </div>
+          <div class="stat-card rejected">
+            <div class="stat-label">Rejected</div>
+            <div class="stat-value" style="color:#ef4444">${statusMap.REJECTED}</div>
+            <div class="stat-sub">Host rejected</div>
+          </div>
+          <div class="stat-card checkin">
+            <div class="stat-label">Checked In</div>
+            <div class="stat-value" style="color:#3b82f6">${statusMap.CHECKED_IN}</div>
+            <div class="stat-sub">Currently inside</div>
+          </div>
+        </div>
+
+        <!-- ── CHARTS ── -->
+        <div class="charts-grid">
+
+          <!-- 1. Status Donut -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <div>
+                <div class="chart-title">Approval Status</div>
+                <div class="chart-value">${total} <span style="font-size:14px;font-weight:500;color:#94a3b8">visitors</span></div>
+              </div>
+            </div>
+            <div class="donut-wrap">
+              <canvas id="statusChart" style="max-height:190px"></canvas>
+              <div class="donut-center">
+                <div class="dc-val">${total}</div>
+                <div class="dc-lbl">Total</div>
+              </div>
+            </div>
+            <div class="legend" id="statusLegend"></div>
+          </div>
+
+          <!-- 2. Department Bar -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <div>
+                <div class="chart-title">Department-wise</div>
+                <div class="chart-value">${deptLabels.length} <span style="font-size:14px;font-weight:500;color:#94a3b8">depts</span></div>
+              </div>
+            </div>
+            <div class="chart-wrap"><canvas id="deptChart"></canvas></div>
+          </div>
+
+          <!-- 3. Gender Donut -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <div>
+                <div class="chart-title">Gender Split</div>
+                <div class="chart-value">${maleCount} / ${femaleCount} <span style="font-size:12px;font-weight:500;color:#94a3b8">M/F</span></div>
+              </div>
+            </div>
+            <div class="donut-wrap">
+              <canvas id="genderChart" style="max-height:190px"></canvas>
+              <div class="donut-center">
+                <div class="dc-val">${total}</div>
+                <div class="dc-lbl">Total</div>
+              </div>
+            </div>
+            <div class="legend" id="genderLegend"></div>
+          </div>
+
+          <!-- 4. Purpose Horizontal Bar (dark) -->
+          <div class="chart-card dark">
+            <div class="chart-header">
+              <div>
+                <div class="chart-title">Purpose Breakdown</div>
+                <div class="chart-value">${purposeLabels.length} <span style="font-size:14px;font-weight:500;color:#475569">types</span></div>
+              </div>
+            </div>
+            <div class="chart-wrap"><canvas id="purposeChart"></canvas></div>
+          </div>
+
+          <!-- 5. Age Group Bar (full width) -->
+          <div class="chart-card full">
+            <div class="chart-header">
+              <div>
+                <div class="chart-title">Age Groups</div>
+                <div class="chart-value">${total} <span style="font-size:14px;font-weight:500;color:#94a3b8">visitors</span></div>
+              </div>
+            </div>
+            <div class="chart-wrap"><canvas id="ageChart" style="max-height:180px"></canvas></div>
+          </div>
+
+        </div>
+      `;
+
+      Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+      Chart.defaults.plugins.legend.display = false;
+
+      // 1. Status Donut
+      const sLabels = Object.keys(statusMap);
+      const sVals   = Object.values(statusMap);
+      const sColors = sLabels.map(l => STATUS_COLORS[l] || '#94a3b8');
+
+      new Chart(document.getElementById('statusChart'), {
+        type: 'doughnut',
+        data: {
+          labels: sLabels,
+          datasets: [{ data: sVals, backgroundColor: sColors, borderWidth: 3, borderColor: '#fff', hoverOffset: 6 }]
+        },
+        options: {
+          cutout: '68%', responsive: true,
+          plugins: { tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw}` } } }
+        }
+      });
+
+      const sLeg = document.getElementById('statusLegend');
+      sLabels.forEach((l, i) => {
+        sLeg.innerHTML += `<div class="legend-item">
+          <div class="legend-dot" style="background:${sColors[i]}"></div>${l} (${sVals[i]})
+        </div>`;
+      });
+
+      // 2. Department Bar
+      new Chart(document.getElementById('deptChart'), {
+        type: 'bar',
+        data: {
+          labels: deptLabels,
+          datasets: [{
+            data: deptVals,
+            backgroundColor: deptLabels.map((_, i) => DEPT_COLORS[i % DEPT_COLORS.length]),
+            borderRadius: 8, borderSkipped: false
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { tooltip: { callbacks: { label: ctx => ` ${ctx.raw} visitors` } } },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+            y: { grid: { color: '#f1f5f9' }, ticks: { stepSize: 1, font: { size: 11 } } }
+          }
+        }
+      });
+
+      // 3. Gender Donut
+      const gLabels = Object.keys(genderMap);
+      const gVals   = Object.values(genderMap);
+      const gColors = gLabels.map(l => GENDER_COLORS[l] || '#94a3b8');
+
+      new Chart(document.getElementById('genderChart'), {
+        type: 'doughnut',
+        data: {
+          labels: gLabels,
+          datasets: [{ data: gVals, backgroundColor: gColors, borderWidth: 3, borderColor: '#fff', hoverOffset: 6 }]
+        },
+        options: {
+          cutout: '68%', responsive: true,
+          plugins: { tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw}` } } }
+        }
+      });
+
+      const gLeg = document.getElementById('genderLegend');
+      gLabels.forEach((l, i) => {
+        gLeg.innerHTML += `<div class="legend-item">
+          <div class="legend-dot" style="background:${gColors[i]}"></div>${l} (${gVals[i]})
+        </div>`;
+      });
+
+      // 4. Purpose Horizontal Bar
+      new Chart(document.getElementById('purposeChart'), {
+        type: 'bar',
+        data: {
+          labels: purposeLabels,
+          datasets: [{
+            data: purposeVals,
+            backgroundColor: purposeLabels.map((_, i) => i % 2 === 0 ? '#3b82f6' : '#22c55e'),
+            borderRadius: 6, borderSkipped: false
+          }]
+        },
+        options: {
+          indexAxis: 'y', responsive: true,
+          plugins: { tooltip: { callbacks: { label: ctx => ` ${ctx.raw} visitors` } } },
+          scales: {
+            x: { grid: { color: 'rgba(255,255,255,0.07)' }, ticks: { color: '#64748b', font: { size: 11 } } },
+            y: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 11 } } }
+          }
+        }
+      });
+
+      // 5. Age Bar
+      const ageLabels = Object.keys(ageGroups);
+      const ageVals   = Object.values(ageGroups);
+
+      new Chart(document.getElementById('ageChart'), {
+        type: 'bar',
+        data: {
+          labels: ageLabels,
+          datasets: [{
+            data: ageVals,
+            backgroundColor: ageLabels.map((_, i) => `rgba(34,197,94,${0.4 + i * 0.13})`),
+            borderRadius: 8, borderSkipped: false
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { tooltip: { callbacks: { label: ctx => ` ${ctx.raw} visitors` } } },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 12 } } },
+            y: { grid: { color: '#f1f5f9' }, ticks: { stepSize: 1, font: { size: 11 } } }
+          }
+        }
+      });
+    }
+    function logout() {
+    	  sessionStorage.clear();
+    	  window.location.href = 'login.html';
+    	}
+  </script>
+  <script src="profile-modal.js"></script>
+</body>
+</html>

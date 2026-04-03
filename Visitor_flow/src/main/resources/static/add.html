@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VMS — New Visitor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { display: flex; min-height: 100vh; background: #f1f5f9; color: #1e293b; }
+
+    .sidebar {
+      width: 220px; min-height: 100vh; background: #143E6B;
+      display: flex; flex-direction: column; padding: 20px 14px;
+      position: fixed; top: 0; left: 0; bottom: 0;
+    }
+    .logo { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 17px; color: white; }
+    .logo-icon { background: rgba(255,255,255,0.2); padding: 6px; border-radius: 8px; display: flex; }
+    .nav { margin-top: 50px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 11px 12px; border-radius: 14px;
+      color: #1b0c0c; text-decoration: none; font-size: 14px; font-weight: 500;
+      background: white; border: 1.5px solid #c8d4d8; transition: 0.2s;
+    }
+    .nav-item.active, .nav-item:hover { background: rgba(255,255,255,0.15); color: white; border-color: transparent; }
+
+    /* ✅ User section — blank, JS bharega */
+    .sidebar-footer {
+      display: flex; align-items: center; gap: 9px;
+      padding: 10px 6px; cursor: pointer; border-radius: 10px; transition: 0.2s;
+    }
+    .sidebar-footer:hover { background: rgba(255,255,255,0.08); }
+    .user-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: white; color: #143E6B;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 12px; flex-shrink: 0;
+    }
+    .user-name { font-size: 13px; font-weight: 600; color: white; display: block; }
+    .user-role { font-size: 11px; color: rgba(255,255,255,0.6); display: block; }
+
+    .logout-btn {
+      display: flex; align-items: center; gap: 8px;
+      width: 100%; margin-top: 10px; padding: 10px 12px;
+      border-radius: 12px; border: 1.5px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.08); color: white;
+      font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .logout-btn:hover { background: #ef4444; border-color: #ef4444; }
+
+    .main { flex: 1; margin-left: 220px; display: flex; flex-direction: column; }
+    .topbar {
+      height: 72px; background: #143E6B;
+      display: flex; align-items: center; justify-content: flex-end;
+      padding: 0 24px; gap: 12px;
+    }
+    .icon-btn {
+      background: rgba(255,255,255,0.15); border: none;
+      padding: 8px; border-radius: 8px; cursor: pointer;
+      color: white; display: flex; align-items: center; position: relative;
+    }
+    .badge {
+      position: absolute; top: -4px; right: -4px;
+      background: #ef4444; color: white; font-size: 9px; font-weight: 700;
+      width: 16px; height: 16px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    /* Topbar avatar */
+    .topbar-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: rgba(255,255,255,0.9); color: #143E6B;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 12px; cursor: pointer;
+    }
+
+    .content { flex: 1; padding: 36px 28px; display: flex; flex-direction: column; align-items: center; }
+
+    .stepper { display: flex; align-items: center; margin-bottom: 24px; }
+    .step { display: flex; align-items: center; gap: 7px; }
+    .step-circle {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; transition: 0.3s;
+    }
+    .s-done { background: #143E6B; color: white; }
+    .s-active { background: #3b82f6; color: white; }
+    .s-idle { background: #e2e8f0; color: #94a3b8; }
+    .step-line { width: 50px; height: 2px; background: #e2e8f0; margin: 0 6px; transition: 0.3s; }
+    .step-line.done { background: #143E6B; }
+    .step-text { font-size: 12px; font-weight: 600; color: #94a3b8; transition: 0.3s; }
+    .step-text.on { color: #1e293b; }
+
+    .card {
+      background: white; border-radius: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      width: 100%; max-width: 500px; overflow: hidden;
+    }
+    .card-top {
+      background: #143E6B; padding: 20px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .card-top h2 { color: white; font-size: 16px; font-weight: 700; }
+    .close-btn {
+      background: rgba(255,255,255,0.15); border: none;
+      width: 28px; height: 28px; border-radius: 50%;
+      color: white; font-size: 15px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .card-body { padding: 24px; display: flex; flex-direction: column; gap: 12px; }
+    .step-panel { display: none; flex-direction: column; gap: 12px; }
+    .step-panel.show { display: flex; }
+    .inp-wrap {
+      display: flex; align-items: center; gap: 10px;
+      background: #f8fafc; border: 1.5px solid #e2e8f0;
+      border-radius: 10px; padding: 11px 14px; transition: 0.2s;
+    }
+    .inp-wrap:focus-within { border-color: #3b82f6; background: white; }
+    .inp-wrap svg { color: #94a3b8; flex-shrink: 0; }
+    .inp-wrap input, .inp-wrap select {
+      flex: 1; border: none; background: transparent;
+      font-size: 14px; font-family: inherit; color: #1e293b;
+      outline: none; appearance: none;
+    }
+    .inp-wrap input::placeholder { color: #cbd5e1; }
+    .card-footer { padding: 0 24px 24px; display: flex; justify-content: flex-end; gap: 10px; }
+    .btn { padding: 10px 22px; border-radius: 9px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; border: none; transition: 0.2s; }
+    .btn-sec { background: #f1f5f9; color: #64748b; }
+    .btn-sec:hover { background: #e2e8f0; }
+    .btn-pri { background: #143E6B; color: white; }
+    .btn-pri:hover { background: #1a5292; }
+
+    .summary { display: flex; flex-direction: column; gap: 10px; }
+    .summary-row { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+    .summary-row:last-child { border-bottom: none; }
+    .summary-label { color: #94a3b8; font-weight: 500; }
+    .summary-value { color: #1e293b; font-weight: 600; }
+
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.35);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.25s;
+    }
+    .modal-overlay.show { opacity: 1; pointer-events: all; }
+    .modal {
+      background: white; border-radius: 18px; padding: 36px 32px; width: 360px;
+      text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+      transform: scale(0.92); transition: transform 0.3s cubic-bezier(.34,1.56,.64,1);
+    }
+    .modal-overlay.show .modal { transform: scale(1); }
+    .modal-icon {
+      width: 64px; height: 64px; border-radius: 50%;
+      background: #dcfce7; margin: 0 auto 16px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .modal h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; color: #1e293b; }
+    .modal p { font-size: 14px; color: #64748b; margin-bottom: 24px; line-height: 1.5; }
+    .modal-btns { display: flex; gap: 10px; justify-content: center; }
+    .modal-btns .btn { min-width: 110px; }
+  </style>
+</head>
+<body>
+
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+      </div>
+      VMS
+    </div>
+    <nav class="nav">
+      <a href="overview.html" class="nav-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Overview
+      </a>
+      <a href="visitorlist.html" class="nav-item active">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        Visitors List
+      </a>
+      <a href="report.html" class="nav-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Reports
+      </a>
+    </nav>
+
+    <!-- ✅ Blank rakho — profile-modal.js bharega -->
+    <div class="sidebar-footer" id="profileBtn">
+      <div class="user-avatar" id="userAvatar"></div>
+      <div>
+        <span class="user-name" id="userName"></span>
+        <span class="user-role" id="userRole"></span>
+      </div>
+    </div>
+
+    <button class="logout-btn" onclick="logout()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+        <polyline points="16 17 21 12 16 7"/>
+        <line x1="21" y1="12" x2="9" y2="12"/>
+      </svg>
+      Logout
+    </button>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <button class="icon-btn">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      </button>
+      <button class="icon-btn">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="badge">3</span>
+      </button>
+      <!-- ✅ Topbar avatar — blank, JS bharega -->
+      <div class="topbar-avatar" id="topbarAvatar" onclick="pmOpen()"></div>
+    </header>
+
+    <div class="content">
+      <div class="stepper">
+        <div class="step">
+          <div class="step-circle s-active" id="c1">1</div>
+          <span class="step-text on" id="t1">Basic Info</span>
+        </div>
+        <div class="step-line" id="l1"></div>
+        <div class="step">
+          <div class="step-circle s-idle" id="c2">2</div>
+          <span class="step-text" id="t2">More Details</span>
+        </div>
+        <div class="step-line" id="l2"></div>
+        <div class="step">
+          <div class="step-circle s-idle" id="c3">3</div>
+          <span class="step-text" id="t3">Confirm</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-top">
+          <h2>New Visitor</h2>
+          <button class="close-btn" onclick="window.location.href='visitorlist.html'">✕</button>
+        </div>
+        <div class="card-body">
+          <div class="step-panel show" id="panel1">
+            <div class="inp-wrap">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <input id="f-name" type="text" placeholder="Full Name">
+            </div>
+            <div class="inp-wrap">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>
+              <input id="f-id" type="text" placeholder="Visitor ID  (e.g. AD20156)">
+            </div>
+            <div class="inp-wrap">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              <input id="f-email" type="email" placeholder="Email">
+            </div>
+            <div class="inp-wrap">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+              <select id="f-dept">
+                <option value="" disabled selected>Department</option>
+                <option>Engineering</option><option>HR</option><option>Finance</option>
+                <option>Marketing</option><option>Operations</option><option>Executive</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="step-panel" id="panel2">
+            <div class="inp-wrap">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+              <input id="f-purpose" type="text" placeholder="Purpose">
+            </div>
+            <div class="inp-wrap">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <input id="f-age" type="number" placeholder="Age" min="1" max="120">
+            </div>
+            <div class="inp-wrap">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.18 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6 6l.94-.94a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              <input id="f-phone" type="tel" placeholder="Phone Number">
+            </div>
+            <div class="inp-wrap">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <select id="f-gender">
+                <option value="" disabled selected>Gender</option>
+                <option>Male</option><option>Female</option><option>Other</option><option>Prefer not to say</option>
+              </select>
+            </div>
+            <div class="inp-wrap">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              <input id="f-address" type="text" placeholder="Address">
+            </div>
+            <div class="inp-wrap">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <input id="f-due" type="datetime-local">
+            </div>
+          </div>
+
+          <div class="step-panel" id="panel3">
+            <div class="summary" id="summary"></div>
+          </div>
+        </div>
+        <div class="card-footer" id="footer"></div>
+      </div>
+    </div>
+  </main>
+
+  <div class="modal-overlay" id="successModal">
+    <div class="modal">
+      <div class="modal-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <h3>Visitor Added!</h3>
+      <p>Visitor has been successfully registered.<br>Aap visitor list pe jaana chahte hain?</p>
+      <div class="modal-btns">
+        <button class="btn btn-sec" onclick="closeModal()">Stay Here</button>
+        <button class="btn btn-pri" onclick="goToList()">Go to List</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let current = 1;
+    const labels = {
+      'f-name':'Name','f-id':'ID','f-email':'Email','f-dept':'Department',
+      'f-purpose':'Purpose','f-age':'Age','f-phone':'Phone',
+      'f-gender':'Gender','f-address':'Address','f-due':'Due Date'
+    };
+    function val(id) { const el = document.getElementById(id); return el ? el.value : ''; }
+    function renderFooter() {
+      const f = document.getElementById('footer');
+      if (current === 1) f.innerHTML = `<button class="btn btn-pri" onclick="go(2)">Next</button>`;
+      else if (current === 2) f.innerHTML = `<button class="btn btn-sec" onclick="go(1)">Back</button><button class="btn btn-pri" onclick="go(3)">Review</button>`;
+      else f.innerHTML = `<button class="btn btn-sec" onclick="go(2)">Back</button><button class="btn btn-pri" onclick="submit()">Create</button>`;
+    }
+    function renderSummary() {
+      document.getElementById('summary').innerHTML = Object.entries(labels).map(([id, label]) => {
+        let v = val(id) || '—';
+        if (id === 'f-due' && v !== '—') v = new Date(v).toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+        return `<div class="summary-row"><span class="summary-label">${label}</span><span class="summary-value">${v}</span></div>`;
+      }).join('');
+    }
+    function updateStepper() {
+      for (let i = 1; i <= 3; i++) {
+        const c = document.getElementById('c'+i), t = document.getElementById('t'+i);
+        c.className = 'step-circle '+(i<current?'s-done':i===current?'s-active':'s-idle');
+        c.textContent = i < current ? '✓' : i;
+        t.className = 'step-text '+(i<=current?'on':'');
+        if (i < 3) document.getElementById('l'+i).className = 'step-line '+(i<current?'done':'');
+      }
+    }
+    function go(n) {
+      document.getElementById('panel'+current).classList.remove('show');
+      current = n;
+      document.getElementById('panel'+current).classList.add('show');
+      if (current === 3) renderSummary();
+      updateStepper(); renderFooter();
+    }
+    function showModal() { document.getElementById('successModal').classList.add('show'); }
+    function closeModal() {
+      document.getElementById('successModal').classList.remove('show');
+      go(1); document.querySelectorAll('input, select').forEach(el => el.value = '');
+    }
+    function goToList() { window.location.href = 'visitorlist.html'; }
+    function logout() { sessionStorage.clear(); window.location.href = 'login.html'; }
+
+    async function submit() {
+      const body = {
+        name: val('f-name'), visitorId: val('f-id'), email: val('f-email'),
+        department: val('f-dept'), purpose: val('f-purpose'),
+        age: parseInt(val('f-age')) || 0, phone: val('f-phone'),
+        gender: val('f-gender'), address: val('f-address'), dueDate: val('f-due')
+      };
+      try {
+        const res = await fetch('http://localhost:8080/add', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+        });
+        if (res.ok) showModal();
+        else alert('Error: ' + res.status);
+      } catch { alert('Cannot reach server. Make sure Spring Boot is running on port 8080.'); }
+    }
+    renderFooter();
+  </script>
+
+  
+  <script src="profile-modal.js"></script>
+</body>
+</html>

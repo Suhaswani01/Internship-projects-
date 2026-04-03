@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VMS — Host Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+    html, body { height: 100%; overflow: hidden; }
+    body { display: flex; background: #f1f5f9; color: #1e293b; }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: 240px; min-width: 240px; height: 100vh;
+      background: #143E6B; display: flex; flex-direction: column;
+      padding: 17px; position: fixed; top: 0; left: 0; z-index: 100;
+    }
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; color: white; }
+    .logo-cloud { background: rgba(255,255,255,0.2); padding: 6px; border-radius: 8px; }
+    .nav { margin-top: 50px; flex-grow: 1; display: flex; flex-direction: column; gap: 6px; }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px; padding: 12px 14px;
+      border-radius: 14px; color: #1b0c0c; text-decoration: none;
+      font-size: 14px; font-weight: 500; background: white;
+      border: 1.5px solid #bacacd; transition: 0.2s; cursor: pointer;
+    }
+    .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.15); color: white; border-color: transparent; }
+    .sidebar-footer { display: flex; align-items: center; gap: 9px; padding: 10px 6px; border-radius: 10px; }
+    .user-avatar { width: 34px; height: 34px; border-radius: 50%; background: white; color: #143E6B; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; flex-shrink: 0; }
+    .user-name { font-size: 13px; font-weight: 600; color: white; display: block; }
+    .user-role { font-size: 11px; color: rgba(255,255,255,0.6); display: block; }
+    .logout-btn {
+      display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 10px;
+      padding: 10px 12px; border-radius: 12px; border: 1.5px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.08); color: white; font-size: 13px;
+      font-weight: 600; cursor: pointer; transition: 0.2s; font-family: inherit;
+    }
+    .logout-btn:hover { background: #ef4444; border-color: #ef4444; }
+
+    /* ── MAIN ── */
+    .main { flex: 1; margin-left: 240px; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    .topbar {
+      height: 70px; background: #143E6B;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px; flex-shrink: 0;
+    }
+    .topbar-left { display: flex; flex-direction: column; }
+    .topbar-title { color: white; font-size: 17px; font-weight: 700; }
+    .topbar-sub { color: rgba(255,255,255,0.65); font-size: 12px; margin-top: 2px; }
+    .topbar-right { display: flex; gap: 10px; align-items: center; }
+    .topbar-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: rgba(255,255,255,0.9); color: #143E6B;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 12px;
+    }
+
+    /* ── SCROLL AREA ── */
+    .scroll-area { flex: 1; overflow-y: auto; padding: 24px; }
+
+    /* ── PENDING BANNER ── */
+    .pending-banner {
+      background: #fffbeb; border: 1.5px solid #fcd34d;
+      border-radius: 14px; padding: 14px 18px;
+      margin-bottom: 20px; display: flex; align-items: center; gap: 12px;
+    }
+    .pending-banner.hidden { display: none; }
+    .pending-icon { width: 36px; height: 36px; background: #f59e0b; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .pending-title { font-size: 14px; font-weight: 700; color: #92400e; }
+    .pending-sub   { font-size: 12px; color: #b45309; margin-top: 2px; }
+
+    /* ── STATS ── */
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .stat-card {
+      background: white; border-radius: 16px; padding: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06); position: relative; overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+    .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; }
+    .stat-card.blue::before  { background: #3b82f6; }
+    .stat-card.amber::before { background: #f59e0b; }
+    .stat-card.green::before { background: #22c55e; }
+    .stat-card.red::before   { background: #ef4444; }
+    .stat-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
+    .stat-icon.blue  { background: #eff6ff; color: #3b82f6; }
+    .stat-icon.amber { background: #fffbeb; color: #f59e0b; }
+    .stat-icon.green { background: #f0fdf4; color: #22c55e; }
+    .stat-icon.red   { background: #fef2f2; color: #ef4444; }
+    .stat-num   { font-size: 30px; font-weight: 800; color: #1e293b; line-height: 1; }
+    .stat-label { font-size: 13px; font-weight: 600; color: #64748b; margin-top: 6px; }
+
+    /* ── TABS ── */
+    .tabs-row { display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; }
+    .tab-btn {
+      padding: 8px 18px; border-radius: 10px; font-size: 13px; font-weight: 600;
+      border: 1.5px solid #e2e8f0; background: white; color: #64748b;
+      cursor: pointer; transition: 0.2s; font-family: inherit;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .tab-btn.active { background: #143E6B; color: white; border-color: #143E6B; }
+    .tab-btn:hover:not(.active) { border-color: #143E6B; color: #143E6B; }
+    .tab-count { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 20px; background: #f1f5f9; color: #64748b; }
+    .tab-btn.active .tab-count { background: rgba(255,255,255,0.2); color: white; }
+
+    /* ── CARDS GRID ── */
+    .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+
+    /* ── VISITOR CARD ── */
+    .v-card {
+      background: white; border-radius: 16px; border: 1.5px solid #e8edf5;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: hidden;
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+    .v-card:hover { box-shadow: 0 6px 20px rgba(20,62,107,0.1); transform: translateY(-2px); }
+    .v-card-top {
+      padding: 16px 18px 14px; border-bottom: 1px solid #f1f5f9;
+      display: flex; align-items: flex-start; gap: 13px;
+    }
+    .v-avatar { width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; color: white; }
+    .av1{background:#3b82f6}.av2{background:#22c55e}.av3{background:#f97316}
+    .av4{background:#ef4444}.av5{background:#6366f1}.av6{background:#d946ef}
+    .av7{background:#0891b2}.av8{background:#65a30d}
+    .v-head { flex: 1; min-width: 0; }
+    .v-name { font-size: 15px; font-weight: 700; color: #1e293b; }
+    .v-sub  { font-size: 12px; color: #64748b; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; flex-shrink: 0; }
+    .status-pending     { background: #fef9c3; color: #854d0e; }
+    .status-approved    { background: #dcfce7; color: #166534; }
+    .status-rejected    { background: #fee2e2; color: #991b1b; }
+    .status-checked_in  { background: #dbeafe; color: #1e40af; }
+    .status-checked_out { background: #f1f5f9; color: #475569; }
+    .v-details { padding: 12px 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; }
+    .v-detail-label { font-size: 10px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+    .v-detail-val   { font-size: 13px; font-weight: 500; color: #334155; margin-top: 1px; }
+    .v-actions { padding: 12px 18px; border-top: 1px solid #f1f5f9; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .act-btn { padding: 7px 16px; border-radius: 9px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: 0.2s; font-family: inherit; display: flex; align-items: center; gap: 5px; }
+    .act-btn:active { transform: scale(0.97); }
+    .btn-approve { background: #dcfce7; color: #166534; }
+    .btn-approve:hover { background: #bbf7d0; }
+    .btn-reject  { background: #fee2e2; color: #991b1b; }
+    .btn-reject:hover  { background: #fecaca; }
+    .btn-id { font-size: 11px; color: #94a3b8; margin-left: auto; background: #f8fafc; border: 1px solid #e2e8f0; padding: 5px 10px; border-radius: 8px; cursor: default; }
+
+    /* ── EMPTY / LOADING ── */
+    .empty-state { grid-column: 1/-1; text-align: center; padding: 60px 20px; color: #94a3b8; font-size: 15px; }
+    .spinner-inline { display: inline-block; width: 26px; height: 26px; border: 3px solid #e2e8f0; border-top-color: #143E6B; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── TOAST ── */
+    .toast { position: fixed; bottom: 24px; right: 24px; padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; color: white; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+    .toast.show { opacity: 1; }
+    .toast.success { background: #16a34a; }
+    .toast.error   { background: #dc2626; }
+
+    @media (max-width: 1100px) { .stats-grid { grid-template-columns: repeat(2,1fr); } }
+  </style>
+</head>
+<body>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-cloud">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2">
+          <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
+        </svg>
+      </div>
+      <span>VMS</span>
+    </div>
+    <nav class="nav">
+      <div class="nav-item active" onclick="switchTab('all')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+        </svg>
+        My Dashboard
+      </div>
+      <div class="nav-item" onclick="switchTab('pending')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+        Pending Approvals
+      </div>
+      <div class="nav-item" onclick="switchTab('today')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        Today's Visitors
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-avatar" id="userAvatar">--</div>
+      <div>
+        <span class="user-name" id="userName">Loading...</span>
+        <span class="user-role">HOST</span>
+      </div>
+    </div>
+    <button class="logout-btn" onclick="logout()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+        <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+      </svg>
+      Logout
+    </button>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <header class="topbar">
+      <div class="topbar-left">
+        <span class="topbar-title">Host Dashboard</span>
+        <span class="topbar-sub" id="deptLabel">Loading...</span>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-avatar" id="topbarAvatar"></div>
+      </div>
+    </header>
+
+    <div class="scroll-area">
+
+      <!-- PENDING BANNER -->
+      <div class="pending-banner hidden" id="pendingBanner">
+        <div class="pending-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+        </div>
+        <div>
+          <div class="pending-title" id="pendingBannerTitle">You have pending approvals</div>
+          <div class="pending-sub"  id="pendingBannerSub">Visitors are waiting for your response</div>
+        </div>
+      </div>
+
+      <!-- STATS -->
+      <div class="stats-grid">
+        <div class="stat-card blue">
+          <div class="stat-icon blue">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </div>
+          <div class="stat-num"   id="statTotal">—</div>
+          <div class="stat-label">Total Visitors</div>
+        </div>
+        <div class="stat-card amber">
+          <div class="stat-icon amber">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </div>
+          <div class="stat-num"   id="statPending">—</div>
+          <div class="stat-label">Pending Approval</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-icon green">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </div>
+          <div class="stat-num"   id="statApproved">—</div>
+          <div class="stat-label">Approved</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-icon red">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+          </div>
+          <div class="stat-num"   id="statToday">—</div>
+          <div class="stat-label">Today's Visitors</div>
+        </div>
+      </div>
+
+      <!-- TABS -->
+      <div class="tabs-row">
+        <button class="tab-btn active" id="tab-all"      onclick="switchTab('all')">
+          All <span class="tab-count" id="cnt-all">0</span>
+        </button>
+        <button class="tab-btn"        id="tab-pending"  onclick="switchTab('pending')">
+          Pending <span class="tab-count" id="cnt-pending">0</span>
+        </button>
+        <button class="tab-btn"        id="tab-today"    onclick="switchTab('today')">
+          Today <span class="tab-count" id="cnt-today">0</span>
+        </button>
+        <button class="tab-btn"        id="tab-approved" onclick="switchTab('approved')">
+          Approved <span class="tab-count" id="cnt-approved">0</span>
+        </button>
+      </div>
+
+      <!-- CARDS -->
+      <div class="cards-grid" id="cardsGrid">
+        <div class="empty-state">
+          <span class="spinner-inline"></span> Loading visitors…
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const API = 'http://localhost:8080';
+    const AV  = ['av1','av2','av3','av4','av5','av6','av7','av8'];
+
+    let allVisitors = [];
+    let hostDept    = '';
+    let hostEmail   = '';
+    let currentTab  = 'all';
+
+    // ── Init ──
+    document.addEventListener('DOMContentLoaded', () => {
+      const name = sessionStorage.getItem('name')  || 'Host';
+      hostEmail   = sessionStorage.getItem('email') || '';
+      hostDept    = sessionStorage.getItem('department') || '';
+
+      const initials = name.trim().split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+      document.getElementById('userName').textContent     = name;
+      document.getElementById('userAvatar').textContent   = initials;
+      document.getElementById('topbarAvatar').textContent = initials;
+      document.getElementById('deptLabel').textContent    = hostDept
+        ? 'Department: ' + hostDept
+        : 'Your visitor requests';
+
+      loadVisitors();
+    });
+
+    // ── Fetch visitors for this host's department ──
+    async function loadVisitors() {
+      try {
+        const url = hostDept
+          ? `${API}/host/visitors?department=${encodeURIComponent(hostDept)}`
+          : `${API}/visitors`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error();
+        allVisitors = await res.json();
+      } catch {
+        allVisitors = getDemoData();
+      }
+      updateStats();
+      renderCards();
+    }
+
+    // ── Stats ──
+    function updateStats() {
+      const today   = new Date().toDateString();
+      const pending  = allVisitors.filter(v => v.status === 'PENDING').length;
+      const approved = allVisitors.filter(v => v.status === 'APPROVED' || v.status === 'CHECKED_IN').length;
+      const todayCnt = allVisitors.filter(v => v.dueDate && new Date(v.dueDate).toDateString() === today).length;
+
+      document.getElementById('statTotal').textContent   = allVisitors.length;
+      document.getElementById('statPending').textContent = pending;
+      document.getElementById('statApproved').textContent = approved;
+      document.getElementById('statToday').textContent   = todayCnt;
+
+      document.getElementById('cnt-all').textContent      = allVisitors.length;
+      document.getElementById('cnt-pending').textContent  = pending;
+      document.getElementById('cnt-today').textContent    = todayCnt;
+      document.getElementById('cnt-approved').textContent = approved;
+
+      const banner = document.getElementById('pendingBanner');
+      if (pending > 0) {
+        banner.classList.remove('hidden');
+        document.getElementById('pendingBannerTitle').textContent =
+          `You have ${pending} pending approval${pending > 1 ? 's' : ''}`;
+        document.getElementById('pendingBannerSub').textContent =
+          `${pending} visitor${pending > 1 ? 's are' : ' is'} waiting for your response`;
+      } else {
+        banner.classList.add('hidden');
+      }
+    }
+
+    // ── Tab switch ──
+    function switchTab(tab) {
+      currentTab = tab;
+      ['all','pending','today','approved'].forEach(t => {
+        document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+      });
+      // Sidebar nav highlight
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      const navMap = { all: 0, pending: 1, today: 2 };
+      const navItems = document.querySelectorAll('.nav-item');
+      if (navMap[tab] !== undefined) navItems[navMap[tab]].classList.add('active');
+      renderCards();
+    }
+
+    // ── Render visitor cards ──
+    function renderCards() {
+      const today = new Date().toDateString();
+      let list = allVisitors;
+
+      if (currentTab === 'pending')  list = allVisitors.filter(v => v.status === 'PENDING');
+      if (currentTab === 'today')    list = allVisitors.filter(v => v.dueDate && new Date(v.dueDate).toDateString() === today);
+      if (currentTab === 'approved') list = allVisitors.filter(v => v.status === 'APPROVED' || v.status === 'CHECKED_IN');
+
+      const grid = document.getElementById('cardsGrid');
+
+      if (!list.length) {
+        const msgs = {
+          all:      'No visitors in your department yet.',
+          pending:  '✓ All caught up — no pending approvals!',
+          today:    'No visitors scheduled for today.',
+          approved: 'No approved visitors yet.'
+        };
+        grid.innerHTML = `<div class="empty-state">${msgs[currentTab] || 'No visitors found.'}</div>`;
+        return;
+      }
+
+      grid.innerHTML = list.map((v, i) => buildCard(v, i)).join('');
+    }
+
+    // ── Build single card ──
+    function buildCard(v, i) {
+      const initials = (v.name || '?').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+      const avClass  = AV[i % AV.length];
+      const status   = (v.status || 'PENDING').toUpperCase();
+      const due = v.dueDate
+        ? new Date(v.dueDate).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+        : '—';
+
+      return `
+        <div class="v-card">
+          <div class="v-card-top">
+            <div class="v-avatar ${avClass}">${initials}</div>
+            <div class="v-head">
+              <div class="v-name">${v.name || '—'}</div>
+              <div class="v-sub">${v.email || ''} ${v.phone ? '· ' + v.phone : ''}</div>
+            </div>
+            <span class="status-badge status-${status.toLowerCase()}">${status.replace('_', ' ')}</span>
+          </div>
+          <div class="v-details">
+            <div>
+              <div class="v-detail-label">Purpose</div>
+              <div class="v-detail-val">${v.purpose || '—'}</div>
+            </div>
+            <div>
+              <div class="v-detail-label">Scheduled</div>
+              <div class="v-detail-val">${due}</div>
+            </div>
+            <div>
+              <div class="v-detail-label">Phone</div>
+              <div class="v-detail-val">${v.phone || '—'}</div>
+            </div>
+            <div>
+              <div class="v-detail-label">Age / Gender</div>
+              <div class="v-detail-val">${v.age ? v.age + ' yrs' : '—'} ${v.gender ? '· ' + v.gender : ''}</div>
+            </div>
+          </div>
+          <div class="v-actions">
+            ${buildActions(v)}
+            <span class="btn-id">AD${v.id}</span>
+          </div>
+        </div>`;
+    }
+
+    // ── Action buttons ──
+    function buildActions(v) {
+      const s = (v.status || 'PENDING').toUpperCase();
+      if (s === 'PENDING')
+        return `
+          <button class="act-btn btn-approve" onclick="doAction(${v.id},'approve')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Approve
+          </button>
+          <button class="act-btn btn-reject" onclick="doAction(${v.id},'reject')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            Reject
+          </button>`;
+      if (s === 'APPROVED')
+        return `
+          <button class="act-btn btn-reject" onclick="doAction(${v.id},'reject')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            Revoke
+          </button>`;
+      return `<span style="font-size:12px;color:#94a3b8">No actions available</span>`;
+    }
+
+    // ── Approve / Reject API call ──
+    async function doAction(id, action) {
+      const labels = { approve: 'Approved ✓ QR email sent!', reject: 'Rejected' };
+      const url = `${API}/host/${id}/${action}?hostEmail=${encodeURIComponent(hostEmail)}`;
+
+      try {
+        const res = await fetch(url, { method: 'PUT' });
+        if (!res.ok) throw new Error();
+        const updated = await res.json();
+        const idx = allVisitors.findIndex(v => v.id === id);
+        if (idx !== -1) allVisitors[idx] = updated;
+        showToast(labels[action], 'success');
+      } catch {
+        // Fallback: update locally
+        const statusMap = { approve: 'APPROVED', reject: 'REJECTED' };
+        const idx = allVisitors.findIndex(v => v.id === id);
+        if (idx !== -1) {
+          allVisitors[idx].status = statusMap[action];
+          showToast(labels[action], 'success');
+        } else {
+          showToast('Action failed', 'error');
+        }
+      }
+      updateStats();
+      renderCards();
+    }
+
+    function showToast(msg, type) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = `toast ${type} show`;
+      setTimeout(() => { t.className = 'toast'; }, 3500);
+    }
+
+    function logout() {
+      sessionStorage.clear();
+      window.location.href = 'login.html';
+    }
+
+    // ── Demo data (jab backend nahi mila) ──
+    function getDemoData() {
+      const dept = hostDept || 'Engineering';
+      return [
+        { id:1, name:'Priya Mehta',   email:'priya@gmail.com',  phone:9876543210, department: dept, purpose:'Client Meeting',  gender:'Female', status:'PENDING',     dueDate: new Date().toISOString(), age:27 },
+        { id:2, name:'Amit Kulkarni', email:'amit@gmail.com',   phone:9823456789, department: dept, purpose:'Interview',       gender:'Male',   status:'APPROVED',    dueDate: new Date().toISOString(), age:34 },
+        { id:3, name:'Sneha Patil',   email:'sneha@gmail.com',  phone:9845612345, department: dept, purpose:'Code Review',     gender:'Female', status:'PENDING',     dueDate:'2026-04-02T14:00:00', age:29 },
+        { id:4, name:'Raj Desai',     email:'raj@gmail.com',    phone:9012345678, department: dept, purpose:'Training',        gender:'Male',   status:'CHECKED_IN',  dueDate:'2026-04-01T09:00:00', age:41 },
+        { id:5, name:'Kavya Nair',    email:'kavya@gmail.com',  phone:9765432109, department: dept, purpose:'Project Demo',    gender:'Female', status:'REJECTED',    dueDate:'2026-03-31T15:00:00', age:38 },
+        { id:6, name:'Arjun Shah',    email:'arjun@gmail.com',  phone:9988776655, department: dept, purpose:'Technical Audit',gender:'Male',   status:'CHECKED_OUT', dueDate:'2026-03-30T10:00:00', age:32 },
+      ];
+    }
+  </script>
+</body>
+</html>
