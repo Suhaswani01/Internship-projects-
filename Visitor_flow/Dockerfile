@@ -1,25 +1,12 @@
-<<<<<<< HEAD
-=======
-
-
->>>>>>> 07ce7356dacdaa2805e26968530e84db6d461544
 FROM maven:3.9.6-eclipse-temurin-21 AS build
 WORKDIR /app
 COPY pom.xml .
 RUN mvn dependency:go-offline -B
 COPY src ./src
 RUN mvn clean package -DskipTests
-<<<<<<< HEAD
 
-=======
- 
->>>>>>> 07ce7356dacdaa2805e26968530e84db6d461544
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080
-<<<<<<< HEAD
 ENTRYPOINT ["java", "-jar", "app.jar"]
-=======
-ENTRYPOINT ["java", "-jar", "app.jar"]
->>>>>>> 07ce7356dacdaa2805e26968530e84db6d461544
