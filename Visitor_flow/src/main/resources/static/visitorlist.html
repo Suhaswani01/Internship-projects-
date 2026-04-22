@@ -292,7 +292,7 @@
       document.getElementById('userAvatar').textContent = initials;
 
       // ✅ STEP 4 — Visitors fetch karo
-      fetch('http://localhost:8080/visitors/pending')
+      fetch('/visitors/pending')
         .then(res => res.json())
         .then(data => {
           allVisitors      = data;

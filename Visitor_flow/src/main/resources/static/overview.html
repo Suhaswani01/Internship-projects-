@@ -362,7 +362,7 @@
     const AV_COLORS = ['av1','av2','av3','av4','av5'];
     const today = new Date().toDateString();
 
-    fetch('http://localhost:8080/visitors')
+    fetch('/visitors')
       .then(r => r.json())
       .then(data => {
         const total       = data.length;

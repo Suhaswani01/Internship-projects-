@@ -369,7 +369,7 @@
         gender: val('f-gender'), address: val('f-address'), dueDate: val('f-due')
       };
       try {
-        const res = await fetch('http://localhost:8080/add', {
+        const res = await fetch('/add', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
         });
         if (res.ok) showModal();

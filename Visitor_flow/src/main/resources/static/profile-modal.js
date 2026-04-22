@@ -222,7 +222,7 @@ async function pmSaveProfile() {
   btn.disabled = true; btn.textContent = 'Saving…';
 
   try {
-    const res = await fetch('http://localhost:8080/auth/update-profile', {
+    const res = await fetch('/auth/update-profile', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ currentEmail, name, newEmail })
@@ -270,7 +270,7 @@ async function pmSavePassword() {
   btn.disabled = true; btn.textContent = 'Updating…';
 
   try {
-    const res = await fetch('http://localhost:8080/auth/change-password', {
+    const res = await fetch('/auth/change-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, oldPassword: oldPass, newPassword: newPass })
