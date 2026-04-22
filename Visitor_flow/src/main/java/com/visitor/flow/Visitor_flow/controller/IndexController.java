@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 	    // Root URL pe aao toh login.html pe bhejo
 	    @GetMapping("/")
 	    public String index() {
-	        return "redirect:/Login.html";
+	        return "redirect:/login.html";
 	    }
 	}
 	 
